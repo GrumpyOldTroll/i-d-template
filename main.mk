@@ -32,13 +32,20 @@ REMOVE_LATEST =
 endif
 export XML_RESOURCE_ORG_PREFIX
 
-%.xml: %.md
+%.xml: %.md *.yang *.json
 	@h=$$(head -1 $< | cut -c 1-4 -); set -o pipefail; \
 	if [ "$${h:0:1}" = $$'\ufeff' ]; then echo 'warning: BOM in $<' 1>&2; h="$${h:1:3}"; \
 	else h="$${h:0:3}"; fi; \
+	echo "vals: $<" ; \
 	if [ "$$h" = '---' ]; then \
-	  echo '$(subst ','"'"',cat $< $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(kramdown-rfc2629) > $@)'; \
-	  cat $< $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(kramdown-rfc2629) > $@; \
+		if bash -x -c "grep -q YANG-MODULE $<" ; then \
+			$(LIBDIR)/yang-inject.sh $< ; \
+			echo '$(subst ','"'"',cat $<.withyang $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(kramdown-rfc2629) > $@)'; \
+			cat $<.withyang $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(kramdown-rfc2629) > $@; \
+		else \
+			echo '$(subst ','"'"',cat $< $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(kramdown-rfc2629) > $@)'; \
+			cat $< $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(kramdown-rfc2629) > $@; \
+		fi ; \
 	elif [ "$$h" = '%%%' ]; then \
 	  echo '$(subst ','"'"',cat $< $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(mmark) -xml2 -page > $@)'; \
 	  cat $< $(MD_PREPROCESSOR) $(REMOVE_LATEST) | $(mmark) -xml2 -page > $@; \
