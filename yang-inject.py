@@ -61,6 +61,8 @@ def main(args):
                       continue
                   if errline.find('not found in search path') != -1:
                       continue
+                  if errline.find('pkg_resources') != -1:
+                      continue 
                   unexpected_errs += 1
                   print(errline, file=sys.stderr)
               if unexpected_errs != 0:
